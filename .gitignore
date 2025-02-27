@@ -172,3 +172,4 @@ cython_debug/
 
 # Hides the local discord bot private token
 data/bot_token.txt
+logs/*

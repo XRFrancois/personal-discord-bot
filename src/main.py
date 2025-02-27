@@ -25,12 +25,12 @@ bot = commands.Bot(command_prefix='$', intents=intents)
 tree = app_commands.CommandTree(client)
 
 # Creates a handler for the logs
-handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+handler = logging.FileHandler(filename='logs/discord.log', encoding='utf-8', mode='w')
 
 # This event is called whenever the bot sends a callback function notifiying us that it is ready.
 @client.event
 async def on_ready():
-    print(f'We have logged in as {client.user}')
+    print(f'BOT logged in as: {client.user}')
 
     # Synchronizes the commands into the tree
     try:
