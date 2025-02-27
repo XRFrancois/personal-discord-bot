@@ -21,3 +21,9 @@ This bot is designed to assist in organizing roles and automating the creation o
 ## Tech Stack & Dependencies
 - **Programming Language**: Python (+ JavaScript?)
 - **Framework**: discord.py (+discord.js)
+
+## Future Features?
+- Automatic moderation
+- Mini-games like rock, paper, scissor
+- Level system
+- Log Data on player / games ? Build a database and a method to cross games between players (e.g. P1 x P2 x P3)
