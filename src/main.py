@@ -110,6 +110,7 @@ async def parrot(interaction: discord.Interaction, input_text: str, repeats_coun
 async def sync_commands(interaction: discord.Interaction, input_password: str):
 
     if input_password == PASSWORD:
+        
         # Synchronizes the commands into the tree
         await tree.sync()
     else:
