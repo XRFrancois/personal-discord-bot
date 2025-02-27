@@ -35,3 +35,8 @@ Can be found in ./test
 
 - Deactivate the environment
 ```deactivate```
+
+### Personal Notes
+When creating a slash command, it can be server specific or global.
+After adding a new one, I need to sync on the desired scale. Server specific with the Guild ID is preferred for development purposes.
+Once it is up, discord must be refreshed.

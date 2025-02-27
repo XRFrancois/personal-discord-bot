@@ -1,19 +1,19 @@
+import os
+from dotenv import load_dotenv
 import discord
 from discord.ext import commands
 from discord import app_commands
 import logging
 
-# Open the file in read mode and returns the token it contains
-def get_local_token(token_file_path: str) -> str:
-    file = open(token_file_path, "r")
-    bot_token = file.read()
-    file.close()
+# Keys are stored locally in the '.env' file for security reasons.
+load_dotenv()
 
-    return bot_token
-
-# Retrieves the token. It is stored locally for security reasons.
-bot_token_path = "./data/bot_token.txt"
-bot_token = get_local_token(bot_token_path)
+# Retrieves the token. 
+TOKEN = os.getenv("TOKEN") 
+# Retrieves the password.
+PASSWORD = os.getenv("PASSWORD") 
+# Retrieves the guild ID.
+GUILD = discord.Object(id=os.getenv("GUILD_ID"))
 
 # Loads the intents for the bot
 intents = discord.Intents.default()
@@ -32,9 +32,9 @@ handler = logging.FileHandler(filename='logs/discord.log', encoding='utf-8', mod
 async def on_ready():
     print(f'BOT logged in as: {client.user}')
 
-    # Synchronizes the commands into the tree
     try:
-        await tree.sync()
+        synced = await tree.sync(guild=GUILD)
+        print(f'Synchronized {len(synced)} commands.')
     except Exception as e:
         print(e)
 
@@ -52,10 +52,16 @@ async def on_message(message):
     # If the beginning of the message is "$hello", will respond with Hello!
     if message.content.startswith('$hello'):
         await message.channel.send('Hello!')
+        print("finished hello")
 
     # If the beginning of the message is "$hello", will respond with Hello!
     if message.content.startswith('$xaviersaitpasfairemarcherlebot'):
         await message.channel.send("Je suis un bot recalcitrant qui veut pas faire ce qu'on lui demande")
+
+    if message.content.startswith('$sync'):
+
+        # Synchronizes the commands into the tree
+        await tree.sync(guild=GUILD)
 
 # Whenever someone edits a message
 @client.event
@@ -84,9 +90,39 @@ async def on_member_join(member):
     # Can I change the specific channel?
 
 # Creates a bot that will respond to commands with the / prefix
-@tree.command(name='test', description="A command for xav's bot")
-async def test(interaction: discord.Integration):
+@tree.command(name='test', description="A command for xav's bot", guild=GUILD)
+async def test(interaction: discord.Interaction):
     await interaction.response.send_message("test successful")
 
+# Creates a bot that will respond to commands with the / prefix
+@tree.command(name='parrot', description="The bot will repeat what it hears the number of times specified.", guild=GUILD)
+# Describes the parameters that are passed to the slash command
+@app_commands.describe(input_text="The text that the bot will repeat.", repeats_count="How many times the bot will repeat the text.")
+async def parrot(interaction: discord.Interaction, input_text: str, repeats_count: int):
+    return_text = ""
+    for _ in range(repeats_count):
+        return_text += input_text + "\n"
+    await interaction.response.send_message(return_text)
+
+# Synchronizes the slash commands
+@tree.command(name='sync_commands', description="Syncs the commands onto the server. May require to reload the page.", guild=GUILD)
+@app_commands.describe(input_password="Enter the password to validate the action.")
+async def sync_commands(interaction: discord.Interaction, input_password: str):
+
+    if input_password == PASSWORD:
+        # Synchronizes the commands into the tree
+        await tree.sync()
+    else:
+        await interaction.response.send_message("Incorrect password.")
+
+# A command that returns the list of common games for a list of players based on their tags
+
+# A command to publish leetcodes onto the server ?
+@tree.command(name='leetcode_report', description="This will report the latest leetcodes completed.", guild=GUILD)
+@app_commands.describe(username="The target user.")
+async def leetcode_report(interaction: discord.Interaction, username: str):
+
+    await interaction.response.send_message(f"User:{username}")
+
 # Runs the bot
-client.run(bot_token, log_handler=handler, log_level=logging.DEBUG)
+client.run(TOKEN, log_handler=handler, log_level=logging.DEBUG)
