@@ -171,5 +171,4 @@ cython_debug/
 .pypirc
 
 # Hides the local discord bot private token
-data/bot_token.txt
 logs/*

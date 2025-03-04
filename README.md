@@ -33,6 +33,9 @@ Can be found in ./test
 - Install the package dependancies
 ```pip install -r requirements.txt```
 
+- Run the bot
+```python src/main.py```
+
 - Deactivate the environment
 ```deactivate```
 

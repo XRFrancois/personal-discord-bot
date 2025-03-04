@@ -12,6 +12,8 @@ This bot is designed to assist in organizing roles and automating the creation o
   - Create a text channel & a voice channel in that category.
   - Log its actions in a private channel.
   - Welcome users, explain the system and allow them to pick some roles.
+  - Post the message with the list of emoji-roles supported
+  - Updates the list of emoji-roles supported and the message
 
 ## Non-Functional Requirements
 - The bot must respond within 250ms to user commands.
