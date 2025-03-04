@@ -5,13 +5,12 @@ This bot is designed to assist in organizing roles and automating the creation o
 
 ## Functional Requirements
 - The bot must be written in English.
-- The bot must be able to:
-  - Respond to user commands to perform the following tasks.
+- The bot must be able to perform the following tasks.
   - Create a new role with given permissions.
   - Create a new category for the new role that is only visible to users with that role AND visible to admins.
   - Create a text channel & a voice channel in that category.
   - Log its actions in a private channel.
-  - Welcome users, explain the system and allow them to pick some roles.
+  - Welcome users, explain the system and allow them to add / remove roles.
   - Post the message with the list of emoji-roles supported
   - Updates the list of emoji-roles supported and the message
 

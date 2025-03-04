@@ -172,3 +172,5 @@ cython_debug/
 
 # Hides the local discord bot private token
 logs/*
+vsp
+data/emoji*

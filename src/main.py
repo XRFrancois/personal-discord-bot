@@ -4,6 +4,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import logging
+import csv
 
 # Keys are stored locally in the '.env' file for security reasons.
 load_dotenv()
@@ -15,17 +16,24 @@ PASSWORD = os.getenv("PASSWORD")
 # Retrieves the guild ID.
 GUILD = discord.Object(id=os.getenv("GUILD_ID"))
 
-
-
 # Sets the ID of the message. TODO extract that and make it more configurable
 selector_message_id = 1346498705976594512
 
-# TODO make a separate lookup table of the pairs to pick the correct ones. Fgrom 
 # Creates a list of emojis - roles pairs. Must return a role for a given emoji.
 emojis_roles = {
     '🏴‍☠️': 886560442305089547, 
     '👍🏽': 688055636629389315
 }
+
+# TODO make a separate lookup table of the pairs to pick the correct ones. From 
+# Retrieves the pairs of emojis - roles from the "database" data/emojis-roles.txt
+emojis_roles = {}
+with open('data/emojis_roles.txt', mode ='r', encoding='utf-8') as file:
+    for line in file:
+        line = line.replace("\n", "")
+        values = line.split(',')
+        emojis_roles[values[0]] = int(values[1])
+    file.close()
 
 # Loads the intents for the bot
 intents = discord.Intents.default()
@@ -44,11 +52,11 @@ tree = app_commands.CommandTree(client)
 async def on_ready():
     print(f'BOT logged in as: {client.user}')
 
-    # try:
-    #     synced = await tree.sync(guild=GUILD)
-    #     print(f'Synchronized {len(synced)} commands.')
-    # except Exception as e:
-    #     print(e)
+    try:
+        synced = await tree.sync(guild=GUILD)
+        print(f'Synchronized {len(synced)} commands.')
+    except Exception as e:
+        print(e)
 
     # TODO if there is no role selection message posted and linked, creates one and links it. RSM should be fetched from .env variables
 
@@ -198,6 +206,32 @@ async def on_raw_reaction_remove(payload):
     reacting_user = guild.get_member(payload.user_id)
     print("Removing role", role_to_remove,"to user", reacting_user)
     await reacting_user.remove_roles(role_to_remove)
+
+# A command add a new emoji-role pair to the "database" file.
+@tree.command(name='add_emoji_role_pair', description="This allows users to add a new emoji-role relation into the database. Requires the password.", guild=GUILD)
+@app_commands.describe(input_password="Password to validate the request.", input_emoji="The emoji that will be associated to the role.", input_role="The role associated to the emoji.")
+async def add_emoji_role_pair(interaction: discord.Interaction, input_password: str, input_emoji: str, input_role: str):
+
+    # If the password is correct
+    if input_password == PASSWORD:
+        
+        # Attempts to find the role by ID on the guild.
+        try:
+            role_name = interaction.guild.get_role(int(input_role))
+            print(role_name)
+        except:
+            print("Provided ID did not match an existing role.")
+            await interaction.response.send_message("Provided ID did not match an existing role.")
+
+        # Adds the pair to the database file.
+        with open('data/emojis_roles.txt', mode ='a', encoding='utf-8') as file:
+            line = "\n" + input_emoji + "," + input_role
+            print(line)
+            file.write(line)
+            file.close()
+            await interaction.response.send_message(f"### Command result:\nSuccessfully added the pair **Emoji**: {input_emoji} - **Role**: *{role_name}* to the database.")
+    else:
+        await interaction.response.send_message("Incorrect password.")
 
 # On join / leave role, post messages accordingly?
 

@@ -8,7 +8,7 @@ Details of the drafted requirements can be found in ./docs
 Python 3.8+
 
 ## Design
-
+Chose to store the data in a .txt file as it was easier to manipulate the unicode emojis tant in a .csv file.
 ## Implementation
 Can be found in ./src
 
