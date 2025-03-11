@@ -21,7 +21,9 @@ PASSWORD = os.getenv("PASSWORD")
 GUILD = discord.Object(id=os.getenv("GUILD_ID"))
 
 # Sets the ID of the message. TODO extract that and make it more configurable
-selector_message_id = 1346498705976594512
+selector_message_id = 1349042179578007594
+selector_channel_id = 1349019110243176469
+user_welcome_channel_id = 1349019011324837928
 
 # TODO add an easier way to add entries to the text file (convert emojis) >> Can take from https://emojipedia.org/video-game
 # TODO export all the roles from the server and give them a random emoji?
@@ -48,7 +50,6 @@ tree = app_commands.CommandTree(client)
 # handler = logging.FileHandler(filename='logs/discord.log', encoding='utf-8', mode='w')
 
 
-
 """ EVENTS TRIGGER """
 
 # Whenever the bot sends a callback function notifiying us that it is ready.
@@ -56,13 +57,54 @@ tree = app_commands.CommandTree(client)
 async def on_ready():
     print(f'BOT logged in as: {client.user}')
 
-    try:
-        synced = await tree.sync(guild=GUILD)
-        print(f'Synchronized {len(synced)} commands.')
-    except Exception as e:
-        print(e)
+    # Attempts to synchronize the / commands on the guild.
+    # try:
+    #     synced = await tree.sync(guild=GUILD)
+    #     print(f'Synchronized {len(synced)} commands.')
+    # except Exception as e:
+    #     print(e)
+
+    # TODO If there is no welcome channel selected, make the system one the default
 
     # TODO if there is no role selection message posted and linked, creates one and links it. RSM should be fetched from .env variables
+    
+    # Get the guild from the client
+    guild = await client.fetch_guild(os.getenv("GUILD_ID"))
+
+    # Get the role selection channel
+    try:
+        channel = await guild.fetch_channel(selector_channel_id)
+    except discord.errors.NotFound:
+        print("Could not find the channel with the provided ID.")
+        return
+        
+    # Checks if there is already a role selection message
+    try:
+        selection_message = await channel.fetch_message(selector_message_id)
+        print(f"Guild currently uses message {selector_message_id} as role selector.")
+    except discord.errors.NotFound:
+        print("Could not find the role selection message with the provided ID.")
+
+        # Creates a message for the role selection
+        role_selection_text = f"# Role Selector\n*Reacting to this message with one of the following emojis will grant you the associated role, allowing you to view and interact with the desired channels.\nRemove the reaction to revert the action.*\n## Currently supported roles are:\n"
+        roles_text = []
+        emojis = []
+        for emoji in emojis_roles.keys():
+            role_name = await guild.fetch_role(emojis_roles[emoji])
+            entry = emoji + " -> `" + role_name.name + "`"
+            emojis.append(emoji)
+            roles_text.append(entry)
+        roles_text = "\n".join(roles_text)
+
+        # Sends the message. Its ID will be tracked from within "on_message"
+        message = await channel.send(role_selection_text + roles_text)
+        message.pin()
+        
+        # Adds the related emojis reactions
+        for emoji in emojis:
+            await message.add_reaction(emoji)
+    
+    # TODO Whenever there is a change to the role-emojis, update the message  
 
 
 # Whenever there is a message posted in the server on which the bot is installed
@@ -74,6 +116,12 @@ async def on_message(message):
     
     # Client.user
     if message.author == client.user:
+
+        # If it is a message from the bot in the channel for role selection
+        if message.channel.id == selector_channel_id: # and "selector message" in message.content:
+            print("message posted in selector channel")
+            global selector_message_id 
+            selector_message_id = message.id
         return
 
     # If the beginning of the message is "$command", will respond with command!
@@ -106,15 +154,13 @@ async def on_message_delete(message):
 async def on_member_join(member):
     guild = member.guild
 
-    # TODO add a way to specify the channel. Can I change the specific channel?
-
-    # Sends a message in the system channel
-    if guild.system_channel is not None:
+    # Sends a message in the chosen welcome channel according to config
+    if guild.get_channel(user_welcome_channel_id) is not None:
         to_send = f'Welcome {member.mention} to {guild.name}!'
-        await guild.system_channel.send(to_send)
+        await guild.get_channel(user_welcome_channel_id).send(to_send)
 
 
-# Whenever someone reacts to the specific message, gives roles according to the emoji (OR commands?)
+# Whenever someone reacts to the specific message, gives roles according to the emoji TODO exclude bot
 @client.event
 async def on_raw_reaction_add(payload):
 
@@ -143,7 +189,7 @@ async def on_raw_reaction_add(payload):
     await reacting_user.add_roles(role_to_add)
 
 
-# Whenever someone reacts to the specific message, gives roles according to the emoji (OR commands?)
+# Whenever someone removes a reaction on the specific message, removes roles according to the emoji
 @client.event
 async def on_raw_reaction_remove(payload):
 
