@@ -5,6 +5,7 @@ from discord.ext import commands
 from discord import app_commands
 import logging
 import csv
+import config_loader as cl
 
 
 
@@ -13,17 +14,15 @@ import csv
 # Keys are stored locally in the '.env' file for security reasons.
 load_dotenv()
 
-# Retrieves the token. 
 TOKEN = os.getenv("TOKEN") 
-# Retrieves the password.
 PASSWORD = os.getenv("PASSWORD") 
-# Retrieves the guild ID.
 GUILD = discord.Object(id=os.getenv("GUILD_ID"))
 
-# Sets the ID of the message. TODO extract that and make it more configurable
-selector_message_id = 1349042179578007594
-selector_channel_id = 1349019110243176469
-user_welcome_channel_id = 1349019011324837928
+# Retrieves the config variables
+CONFIG = cl.load_config()
+SELECTOR_CHANNEL_ID = CONFIG["role_selection"]["selector_channel_id"]
+SELECTOR_MESSAGE_ID = CONFIG["role_selection"]["selector_message_id"]
+WELCOME_CHANNEL_ID = CONFIG["role_selection"]["user_welcome_channel_id"]
 
 # TODO add an easier way to add entries to the text file (convert emojis) >> Can take from https://emojipedia.org/video-game
 # TODO export all the roles from the server and give them a random emoji?
@@ -73,15 +72,20 @@ async def on_ready():
 
     # Get the role selection channel
     try:
-        channel = await guild.fetch_channel(selector_channel_id)
+        channel = await guild.fetch_channel(SELECTOR_CHANNEL_ID)
     except discord.errors.NotFound:
         print("Could not find the channel with the provided ID.")
         return
         
     # Checks if there is already a role selection message
     try:
-        selection_message = await channel.fetch_message(selector_message_id)
-        print(f"Guild currently uses message {selector_message_id} as role selector.")
+        selection_message = await channel.fetch_message(SELECTOR_MESSAGE_ID)
+        print(f"Guild currently uses message {SELECTOR_MESSAGE_ID} as role selector.")
+        print(selection_message.content)
+        
+        # Pins the message. TODO remove the pin later to reduce unnecessary notifications?
+        await selection_message.pin()
+
     except discord.errors.NotFound:
         print("Could not find the role selection message with the provided ID.")
 
@@ -97,8 +101,10 @@ async def on_ready():
         roles_text = "\n".join(roles_text)
 
         # Sends the message. Its ID will be tracked from within "on_message"
-        message = await channel.send(role_selection_text + roles_text)
-        message.pin()
+        message = await channel.send(role_selection_text + roles_text, silent=True)
+
+        # Pins the message. TODO remove the pin later to reduce unnecessary notifications?
+        await message.pin()
         
         # Adds the related emojis reactions
         for emoji in emojis:
@@ -114,19 +120,22 @@ async def on_message(message):
     # Prints any message event's author and its content
     print(f"Message from {message.author.display_name}: {message.content}")
     
-    # Client.user
+    # If the message was sent by this bot
     if message.author == client.user:
 
         # If it is a message from the bot in the channel for role selection
-        if message.channel.id == selector_channel_id: # and "selector message" in message.content:
+        if message.channel.id == SELECTOR_CHANNEL_ID: # and "selector message" in message.content:
             print("message posted in selector channel")
-            global selector_message_id 
-            selector_message_id = message.id
+            global SELECTOR_MESSAGE_ID 
+            SELECTOR_MESSAGE_ID = message.id
+            CONFIG["role_selection"]["selector_message_id"] = SELECTOR_MESSAGE_ID  # Change prefix
+            cl.save_config(CONFIG)  # Save back to file
+
         return
 
     # If the beginning of the message is "$command", will respond with command!
     if message.content.startswith('$command'):
-        await message.channel.send('Received: command!')
+        await message.channel.send('Received: command!', silent=True)
 
     # Forces the sync of the tree from the chat
     if message.content.startswith('$sync'):
@@ -155,9 +164,9 @@ async def on_member_join(member):
     guild = member.guild
 
     # Sends a message in the chosen welcome channel according to config
-    if guild.get_channel(user_welcome_channel_id) is not None:
+    if guild.get_channel(WELCOME_CHANNEL_ID) is not None:
         to_send = f'Welcome {member.mention} to {guild.name}!'
-        await guild.get_channel(user_welcome_channel_id).send(to_send)
+        await guild.get_channel(WELCOME_CHANNEL_ID).send(to_send)
 
 
 # Whenever someone reacts to the specific message, gives roles according to the emoji TODO exclude bot
@@ -165,7 +174,7 @@ async def on_member_join(member):
 async def on_raw_reaction_add(payload):
 
     # Ignores if the id of the message is not the desired one
-    if payload.message_id != selector_message_id:
+    if payload.message_id != SELECTOR_MESSAGE_ID:
         return
 
     # Extracts the roles from the server
@@ -194,7 +203,7 @@ async def on_raw_reaction_add(payload):
 async def on_raw_reaction_remove(payload):
 
     # Ignores if the id of the message is not the desired one
-    if payload.message_id != selector_message_id:
+    if payload.message_id != SELECTOR_MESSAGE_ID:
         return
 
     # Extracts the roles from the server

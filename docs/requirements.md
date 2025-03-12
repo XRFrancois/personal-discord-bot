@@ -24,7 +24,7 @@ This bot is designed to assist in organizing roles and automating the creation o
 - **Framework**: discord.py (+discord.js)
 
 ## Future Features?
-- Automatic moderation
-- Mini-games like rock, paper, scissor
-- Level system
 - Log Data on player / games ? Build a database and a method to cross games between players (e.g. P1 x P2 x P3)
+- Level system
+- Mini-games like rock, paper, scissor
+- Automatic moderation
